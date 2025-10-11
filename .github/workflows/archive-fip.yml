@@ -124,9 +124,13 @@ jobs:
 
             ### 📥 Access Archive
 
-            - **Direct Download:** [Download CAR file](${downloadUrl})
-            - **View on Explorer:** [Transaction Details](https://calibration.filfox.info/tx/${txHash})
-            - **GitHub Artifact:** Available in [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - **🌐 IPFS Gateway:** [View on ipfs.io](https://ipfs.io/ipfs/${rootCid}/index.html)
+            - **🌐 Alternative Gateway:** [View on dweb.link](https://dweb.link/ipfs/${rootCid}/index.html)
+            - **💾 Direct Download:** [Download CAR file](${downloadUrl})
+            - **🔍 Blockchain Explorer:** [Transaction Details](https://calibration.filfox.info/tx/${txHash})
+            - **📦 GitHub Artifact:** Available in [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            > **Note:** All links within the archive (PRs, diffs, comments) work when viewed via IPFS gateways!
 
             ### 🔍 Verify Storage
 
