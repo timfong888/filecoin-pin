@@ -362,11 +362,16 @@ function createHtmlIndex(issue, comments, prs, outputDir) {
   ${prs.length > 0 ? `
   <section id="prs">
     <h2>Pull Requests (${prs.length})</h2>
+    <p>View detailed pull requests and code changes:</p>
     ${prs.map(pr => `
-    <a href="pull-requests/pr-${pr.number}.md" class="pr-link">
-      #${pr.number}: ${pr.title}
-      ${pr.merged ? '✓ Merged' : pr.state}
-    </a>
+    <div style="margin-bottom: 15px;">
+      <a href="pull-requests/pr-${pr.number}.html" class="pr-link">
+        #${pr.number}: ${pr.title}
+        ${pr.merged ? '✓ Merged' : pr.state}
+      </a>
+      ${pr.diff ? `<br><a href="pull-requests/diff-${pr.number}.patch" style="margin-left: 10px; font-size: 14px;">View diff</a>` : ''}
+      <a href="${pr.url}" target="_blank" style="margin-left: 10px; font-size: 14px;">View on GitHub ↗</a>
+    </div>
     `).join('')}
   </section>
   ` : ''}
@@ -375,6 +380,15 @@ function createHtmlIndex(issue, comments, prs, outputDir) {
     <h3>✓ Filecoin Storage Verification</h3>
     <p>This archive is permanently stored on the Filecoin network with cryptographic proof of data possession.</p>
     <p><strong>Verification details:</strong> See <code>verification.json</code> for blockchain transaction hash, Piece CID, and storage provider information.</p>
+
+    <h4 style="margin-top: 20px;">📥 Access This Archive</h4>
+    <p>This archive can be accessed in multiple ways:</p>
+    <ul>
+      <li><strong>IPFS Gateway:</strong> <code>https://ipfs.io/ipfs/[ROOT_CID]/index.html</code></li>
+      <li><strong>Direct Download:</strong> Download CAR file from storage provider</li>
+      <li><strong>Local IPFS:</strong> <code>ipfs cat [ROOT_CID]/index.html</code></li>
+    </ul>
+    <p style="font-size: 14px; margin-top: 10px;"><em>All links in this archive work when viewed via IPFS gateways.</em></p>
   </section>
 
   <footer style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #d0d7de; color: #57606a; font-size: 14px;">
@@ -459,6 +473,105 @@ ${pr.body || '*No description provided*'}
         'utf8'
       );
     }
+
+    // Create HTML version for IPFS gateway compatibility
+    const prHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PR #${pr.number}: ${pr.title}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+      color: #24292f;
+    }
+    header {
+      border-bottom: 2px solid #d0d7de;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    h1 { margin: 0; font-size: 28px; }
+    .meta {
+      color: #57606a;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    .merged { background: #dafbe1; color: #1a7f37; }
+    .open { background: #ddf4ff; color: #0969da; }
+    .closed { background: #f1f8ff; color: #57606a; }
+    pre {
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 85%;
+    }
+    .links {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f6f8fa;
+      border-radius: 6px;
+    }
+    .links a {
+      display: inline-block;
+      margin-right: 15px;
+      color: #0969da;
+      text-decoration: none;
+    }
+    .links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PR #${pr.number}: ${pr.title}</h1>
+    <div class="meta">
+      <strong>Author:</strong> ${pr.author}
+    </div>
+    <div class="badge ${pr.merged ? 'merged' : pr.state}">
+      ${pr.merged ? '✓ Merged' : pr.state.charAt(0).toUpperCase() + pr.state.slice(1)}
+    </div>
+  </header>
+
+  <div class="links">
+    <a href="../index.html">← Back to FIP</a>
+    ${pr.diff ? `<a href="diff-${pr.number}.patch">View Diff</a>` : ''}
+    <a href="${pr.url}" target="_blank">View on GitHub ↗</a>
+  </div>
+
+  <section>
+    <h2>Description</h2>
+    <div>${pr.body ? pr.body.replace(/\n/g, '<br>') : '<em>No description provided</em>'}</div>
+  </section>
+
+  ${pr.diff ? `
+  <section>
+    <h2>Code Changes</h2>
+    <pre>${pr.diff.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+  </section>
+  ` : ''}
+
+  <footer style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #d0d7de; color: #57606a; font-size: 14px;">
+    <p>Part of FIP #${issue.number} archive</p>
+  </footer>
+</body>
+</html>`;
+    fs.writeFileSync(path.join(prDir, `pr-${pr.number}.html`), prHtml, 'utf8');
   }
 
   // Write metadata
@@ -551,6 +664,10 @@ function uploadToFilecoin(outputDir) {
     console.log(`  Download URL: ${verification.downloadUrl}`);
     console.log(`\n🔗 View on Explorer:`);
     console.log(`  https://calibration.filfox.info/tx/${verification.transactionHash}`);
+    console.log(`\n🌐 Access via IPFS Gateway:`);
+    console.log(`  https://ipfs.io/ipfs/${verification.rootCid}/index.html`);
+    console.log(`  https://dweb.link/ipfs/${verification.rootCid}/index.html`);
+    console.log(`\n💡 All links work when viewing via IPFS gateways!`);
 
     return verification;
   } catch (error) {
