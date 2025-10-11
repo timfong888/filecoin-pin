@@ -1,196 +1,267 @@
-# Filecoin Pin
+# FIP Archival System
 
-[![NPM](https://nodei.co/npm/filecoin-pin.svg?style=flat&data=n,v)](https://nodei.co/npm/filecoin-pin/)
+> Automatically archive approved Filecoin Improvement Proposals (FIPs) to permanent decentralized storage with cryptographic proof.
 
-Bridge IPFS content to Filecoin Onchain Cloud using familiar tools.
+## What This Does
 
-## What It Does
+When someone comments **"FIP approved"** on a GitHub issue, this system:
 
-Filecoin Pin provides two ways to store data on Filecoin:
+1. **Extracts all FIP data** - Issue body, comments, linked PRs, code changes
+2. **Creates self-contained archive** - HTML/markdown with clickable links
+3. **Uploads to Filecoin** - Using `filecoin-pin` CLI for permanent storage
+4. **Provides verification** - Returns Piece CID and blockchain proof
 
-1. **IPFS Pinning Service** - Use `ipfs pin remote` commands to pin content to Filecoin
-2. **Direct CAR Import** - Upload existing CAR files directly to Filecoin
+## Why This Matters
 
-Both methods use Synapse SDK to handle Filecoin storage deals, providing persistent storage with cryptographic proofs.
+FIPs are critical governance documents for the Filecoin network. This ensures:
 
-## Installation
+- **Permanent preservation** - FIPs stored on the network they govern
+- **Cryptographic proof** - PDP (Proof of Data Possession) verifies storage
+- **Self-contained records** - Complete history with all discussions and code
+- **Public verifiability** - Anyone can verify the archive on-chain
 
-Requires Node.js 24+
+## How It Works
 
-```bash
-npm install -g filecoin-pin
+```
+"FIP approved" comment → GitHub Action triggers
+                              ↓
+                    Extract FIP data (issue + comments + PRs)
+                              ↓
+                    Create archive with links
+                              ↓
+                    Upload via filecoin-pin CLI
+                              ↓
+                    Return Piece CID + blockchain proof
+                              ↓
+                    Comment back with verification links
 ```
 
 ## Quick Start
 
-### 1. Set Up Payments (Required First Step)
+### For Repository Owners
 
-Before storing data, configure your Filecoin payment approvals:
-
+1. **Fork this repository**
 ```bash
-# Check your current payment status
-filecoin-pin payments status
-
-# Interactive setup (recommended)
-filecoin-pin payments setup
-
-# Or automated setup
-filecoin-pin payments setup --deposit 100 --storage 10TiB --auto
+gh repo fork timfong888/filecoin-pin
 ```
 
-You'll need:
-- A private key with USDFC tokens on Calibration testnet
-- Get test USDFC from the [faucet](https://docs.secured.finance/usdfc-stablecoin/getting-started#testnet-resources)
-
-### 2. Choose Your Storage Method
-
-#### Option A: Run IPFS Pinning Service
-
+2. **Set up GitHub secrets** (in your repo settings)
 ```bash
-# Start the daemon
-PRIVATE_KEY=0x... filecoin-pin daemon
-
-# In another terminal, configure IPFS
-ipfs pin remote service add filecoin http://localhost:3456 any-token
-
-# Pin content
-ipfs pin remote add --service=filecoin QmYourCID
+FILECOIN_PRIVATE_KEY=0x...  # Your Filecoin wallet private key
+FILECOIN_RPC_URL=https://api.calibration.node.glif.io/rpc/v1
 ```
 
-#### Option B: Import CAR Files Directly
+3. **Ensure you have USDFC tokens**
+- Get testnet USDFC from [faucet](https://stg.usdfc.net)
+- Need ~50-100 USDFC for deposits
+
+4. **Comment "FIP approved" on any issue**
+- The action runs automatically
+- Archive is uploaded to Filecoin
+- Bot comments back with verification links
+
+### For Users Verifying Archives
+
+View archived FIPs using the returned information:
 
 ```bash
-# Import a CAR file
-filecoin-pin import /path/to/file.car --private-key 0x...
+# Using the Piece CID
+curl https://calib.ezpdpz.net/piece/bafkzcib...
+
+# Verify on blockchain explorer
+open https://calibration.filfox.info/tx/0x...
 ```
 
-## Commands
+## Manual Usage
 
-### `filecoin-pin daemon`
-Runs the IPFS Pinning Service API server.
+You can also run the archival script manually:
 
-**Options:**
-- `--port <number>` - Server port (default: 3456)
-- `--host <string>` - Server host (default: localhost)
-- `--database <path>` - SQLite database location
-- `--car-storage <path>` - CAR file storage directory
+```bash
+# Archive a specific issue
+node scripts/archive-fip.js --issue 123
 
-### `filecoin-pin payments status`
-Check payment configuration and balances.
+# Archive with custom output
+node scripts/archive-fip.js --issue 123 --output fip-123-archive/
 
-**Options:**
-- `--private-key <key>` - Ethereum private key
-- `--rpc-url <url>` - Filecoin RPC endpoint
+# Dry run (don't upload)
+node scripts/archive-fip.js --issue 123 --dry-run
+```
 
-### `filecoin-pin payments setup`
-Configure payment approvals for Filecoin storage.
+## Archive Structure
 
-**Options:**
-- `--private-key <key>` - Ethereum private key
-- `--rpc-url <url>` - Filecoin RPC endpoint
-- `--deposit <amount>` - USDFC amount to deposit
-- `--storage <size>` - Storage allowance (e.g., "10TiB" or "5000" for USDFC/epoch)
-- `--auto` - Run without prompts
+Each FIP archive contains:
 
-### `filecoin-pin import <file>`
-Import an existing CAR file to Filecoin.
+```
+fip-{number}-archive/
+├── index.html              # Main document with navigation
+├── issue.md                # Original issue body
+├── comments.md             # All comments with timestamps
+├── pull-requests/          # Linked PRs with code changes
+│   ├── pr-{number}.md
+│   └── diff-{number}.patch
+├── metadata.json           # FIP metadata
+└── verification.json       # Filecoin storage proof
+```
 
-**Options:**
-- `--private-key <key>` - Ethereum private key
-- `--rpc-url <url>` - Filecoin RPC endpoint
+All internal links are preserved and clickable within the archive.
 
-**Output includes:**
-- Piece CID for retrieval
-- Storage provider details
-- Direct download URL
+## GitHub Action Workflow
+
+The action runs on issue comments containing "FIP approved":
+
+```yaml
+name: Archive FIP to Filecoin
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  archive:
+    if: contains(github.event.comment.body, 'FIP approved')
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Extract FIP data
+      - name: Create archive
+      - name: Upload to Filecoin
+      - name: Comment verification links
+```
+
+## Requirements
+
+- **Node.js 22+** - Required for filecoin-pin
+- **GitHub CLI** - For API access
+- **USDFC tokens** - For Filecoin storage payments
+- **Filecoin wallet** - With private key
 
 ## Configuration
 
 ### Environment Variables
 
 ```bash
-# Required for daemon
-PRIVATE_KEY=0x...              # Ethereum private key with USDFC
-
-# Optional
-RPC_URL=wss://...              # Filecoin RPC (default: calibration websocket)
-PORT=3456                      # Daemon port
-DATABASE_PATH=./pins.db        # SQLite database
-CAR_STORAGE_PATH=./cars        # CAR file directory
-LOG_LEVEL=info                 # Logging level
+PRIVATE_KEY=0x...              # Required: Filecoin wallet private key
+RPC_URL=https://...            # Optional: Filecoin RPC endpoint
+GITHUB_TOKEN=${{ secrets }}    # Provided by GitHub Actions
 ```
 
-### Default Directories
+### Storage Costs
 
-When not specified, data is stored in:
-- **Linux**: `~/.local/share/filecoin-pin/`
-- **macOS**: `~/Library/Application Support/filecoin-pin/`
-- **Windows**: `%APPDATA%/filecoin-pin/`
+Approximate costs on Calibration testnet:
+- Small FIP (<1MB): ~5 USDFC
+- Medium FIP (1-10MB): ~10 USDFC
+- Large FIP (>10MB): ~20 USDFC
 
-## How It Works
+## Security
 
-### IPFS Pinning Flow
-1. Receive pin request from IPFS
-2. Create CAR file with root CID
-3. Fetch blocks via Bitswap
-4. Stream blocks directly to CAR
-5. Upload CAR to Synapse
-6. Return Filecoin piece CID
+**⚠️ Important Security Notes:**
 
-### CAR Import Flow
-1. Validate CAR file format
-2. Extract root CIDs
-3. Upload to Synapse
-4. Display storage provider info
+- Never commit private keys to the repository
+- Use GitHub Secrets for all sensitive data
+- This is testnet only - not for production
+- Private keys in GitHub Actions are ephemeral
+
+## Examples
+
+### Archived FIP Example
+
+See [example-archive/](example-archive/) for a sample archived FIP showing:
+- Complete issue and discussion
+- Linked pull requests
+- Code changes
+- Filecoin verification data
+
+### Verification Example
+
+```bash
+# Check the transaction on-chain
+cast receipt 0x... --rpc-url $RPC_URL
+
+# Verify the data set
+filecoin-pin data-set 325
+
+# Download and verify the archive
+curl -o archive.car https://calib.ezpdpz.net/piece/bafkzcib...
+ipfs-car ls archive.car
+```
+
+## Troubleshooting
+
+### "No USDFC tokens found"
+```bash
+# Check balance
+filecoin-pin payments status
+
+# Get testnet USDFC
+open https://stg.usdfc.net
+```
+
+### "Payment setup required"
+```bash
+# Run initial setup
+filecoin-pin payments setup --auto --deposit 50
+```
+
+### "GitHub API rate limit"
+```bash
+# Use authenticated requests (automatically handled in Actions)
+gh auth login
+```
 
 ## Development
 
+### Running Tests
+
 ```bash
-# Clone and install
-git clone https://github.com/filecoin-project/filecoin-pin
-cd filecoin-pin
 npm install
-
-# Run development server
-npm run dev
-
-# Run tests
 npm test
-
-# Build for production
-npm run build
 ```
 
-### Testing
+### Testing the Archive Script
 
 ```bash
-npm run test           # All tests
-npm run test:unit      # Unit tests only
-npm run test:integration # Integration tests
-npm run lint:fix       # Fix formatting
+# Test with dry-run
+node scripts/archive-fip.js --issue 1 --dry-run
+
+# Test actual upload (requires USDFC)
+node scripts/archive-fip.js --issue 1
 ```
 
-## Synapse SDK Integration Examples
+### Local Testing of GitHub Action
 
-This project includes comprehensive examples for integrating with the Synapse SDK. See the [`src/synapse`](src/synapse) directory for:
+```bash
+# Install act (GitHub Actions local runner)
+brew install act
 
-- **Service initialization** with lifecycle management
-- **Upload patterns** for CAR files with progress tracking
-- **Payment operations** including deposits and approvals
-- **Production patterns** for error handling and resource cleanup
+# Run the workflow locally
+act issue_comment -e test-event.json
+```
 
-These examples demonstrate best practices for building applications on Filecoin Onchain Cloud.
+## Architecture
 
-## Status
+Built on:
+- **[filecoin-pin](https://github.com/filecoin-project/filecoin-pin)** - CLI for uploading to Filecoin
+- **[Synapse SDK](https://github.com/filecoin-project/synapse-sdk)** - Filecoin payment rails
+- **[PDP Protocol](https://github.com/filecoin-project/pdp)** - Proof of Data Possession
+- **GitHub Actions** - Automation platform
 
-**⚠️ Alpha Software** - Currently running on Filecoin Calibration testnet only. Not for production use.
+## Roadmap
 
-## License
-
-Dual-licensed under [MIT](LICENSE-MIT) + [Apache 2.0](LICENSE-APACHE)
+- [ ] Support for FIP-specific metadata extraction
+- [ ] IPFS gateway links for retrieval
+- [ ] Mainnet support
+- [ ] Archive search/indexing
+- [ ] Multi-repo FIP tracking
 
 ## References
 
+- [Filecoin Pin Demo Walkthrough](../demo-walkthrough/DEMO_WALKTHROUGH.md)
 - [IPFS Pinning Service API](https://ipfs.github.io/pinning-services-api-spec/)
-- [Synapse SDK](https://github.com/filecoin-project/synapse-sdk)
-- [USDFC Documentation](https://docs.secured.finance/usdfc-stablecoin)
+- [Synapse SDK Documentation](https://github.com/filecoin-project/synapse-sdk)
+- [FIP Process](https://github.com/filecoin-project/FIPs)
+
+## License
+
+Dual-licensed under MIT + Apache 2.0 (same as upstream filecoin-pin)
+
+## Original Project
+
+This is a fork of [filecoin-project/filecoin-pin](https://github.com/filecoin-project/filecoin-pin) with added FIP archival automation. See [README-ORIGINAL.md](README-ORIGINAL.md) for the original documentation.
