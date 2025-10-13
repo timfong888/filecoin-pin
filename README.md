@@ -441,6 +441,7 @@ Dual-licensed under MIT + Apache 2.0 (same as upstream filecoin-pin)
 For issues and questions:
 - **Issues**: https://github.com/timfong888/filecoin-pin/issues
 - **Discussions**: https://github.com/timfong888/filecoin-pin/discussions
+- **Production FIPs Repo**: https://github.com/timfong888/FIPs
 
 ---
 
