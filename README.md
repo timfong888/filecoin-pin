@@ -2,115 +2,194 @@
 
 > Automatically archive approved Filecoin Improvement Proposals (FIPs) to permanent decentralized storage with cryptographic proof.
 
+[![GitHub Action](https://img.shields.io/badge/GitHub-Action-blue)](https://github.com/timfong888/filecoin-pin/blob/master/.github/workflows/archive-fip.yml)
+[![IPFS Compatible](https://img.shields.io/badge/IPFS-Compatible-green)](https://ipfs.io)
+[![Filecoin Storage](https://img.shields.io/badge/Filecoin-Storage-orange)](https://filecoin.io)
+
 ## What This Does
 
-When someone comments **"FIP approved"** on a GitHub issue, this system:
+When someone comments **"FIP approved"** on a GitHub issue, this system automatically:
 
-1. **Extracts all FIP data** - Issue body, comments, linked PRs, code changes
-2. **Creates self-contained archive** - HTML/markdown with clickable links
-3. **Uploads to Filecoin** - Using `filecoin-pin` CLI for permanent storage
-4. **Provides verification** - Returns Piece CID and blockchain proof
+1. **Extracts complete FIP data** - Issue body, all comments, linked PRs with code diffs
+2. **Creates self-contained archive** - HTML pages with working navigation and clickable links
+3. **Uploads to Filecoin** - Permanent decentralized storage with PDP cryptographic proof
+4. **Returns verification** - IPFS gateway URLs, blockchain transaction, Piece CID
 
 ## Why This Matters
 
 FIPs are critical governance documents for the Filecoin network. This ensures:
 
 - **Permanent preservation** - FIPs stored on the network they govern
-- **Cryptographic proof** - PDP (Proof of Data Possession) verifies storage
-- **Self-contained records** - Complete history with all discussions and code
-- **Public verifiability** - Anyone can verify the archive on-chain
+- **Cryptographic proof** - PDP (Proof of Data Possession) verifies ongoing storage
+- **Self-contained records** - Complete history with all discussions and code changes
+- **Public verifiability** - Anyone can verify archives on-chain
+- **IPFS gateway access** - View archives via ipfs.io or dweb.link with all links working
+
+## Live Demo
+
+**Production System**: https://github.com/timfong888/FIPs
+
+Comment "FIP approved" on any issue to see it in action!
+
+## Key Features
+
+### 🌐 IPFS Gateway Compatible
+
+Archives are viewable via any IPFS gateway with **all internal links working**:
+
+```
+https://ipfs.io/ipfs/[ROOT_CID]/index.html
+https://dweb.link/ipfs/[ROOT_CID]/index.html
+```
+
+**What makes this special:**
+- ✅ Click through to PR pages
+- ✅ View code diffs inline
+- ✅ Read all comments
+- ✅ Navigate between sections
+- ✅ Works offline once downloaded
+- ✅ No broken external links
+
+### 🔗 Complete Data Extraction
+
+Each archive includes:
+- **index.html** - Main navigation page with full issue content
+- **pull-requests/pr-{N}.html** - Individual PR pages with descriptions
+- **pull-requests/diff-{N}.patch** - Complete code diffs
+- **comments.md** - All discussion in chronological order
+- **metadata.json** - Machine-readable archive metadata
+- **verification.json** - Filecoin storage proof (Piece CID, transaction hash)
+
+### 🔐 Cryptographic Verification
+
+Every archive includes:
+- **Piece CID** - Filecoin content identifier
+- **Root CID** - IPFS content identifier
+- **Transaction Hash** - Blockchain verification
+- **Data Set ID** - On-chain storage tracking
+- **Download URL** - Direct retrieval from storage provider
 
 ## How It Works
 
+```mermaid
+graph LR
+    A["FIP approved" comment] --> B[GitHub Action Triggers]
+    B --> C[Extract Issue Data]
+    C --> D[Extract Comments]
+    D --> E[Extract Linked PRs]
+    E --> F[Create HTML Archive]
+    F --> G[Upload to Filecoin]
+    G --> H[Generate Verification]
+    H --> I[Post IPFS Gateway Links]
 ```
-"FIP approved" comment → GitHub Action triggers
-                              ↓
-                    Extract FIP data (issue + comments + PRs)
-                              ↓
-                    Create archive with links
-                              ↓
-                    Upload via filecoin-pin CLI
-                              ↓
-                    Return Piece CID + blockchain proof
-                              ↓
-                    Comment back with verification links
-```
+
+### Detailed Flow
+
+1. **Trigger**: User comments "FIP approved" on any issue
+2. **Extraction** (~30 seconds):
+   - Fetch issue metadata and body
+   - Fetch all comments with timestamps
+   - Find linked PRs via #123 references
+   - Download PR descriptions and diffs
+3. **Archive Creation** (~5 seconds):
+   - Generate HTML index with navigation
+   - Create HTML pages for each PR
+   - Use relative links for IPFS compatibility
+   - Include metadata and timestamps
+4. **Upload to Filecoin** (~30-60 seconds):
+   - Package as CAR file
+   - Upload via filecoin-pin CLI
+   - Create payment rails
+   - Wait for PDP proof generation
+5. **Verification** (~5 seconds):
+   - Extract Piece CID and Root CID
+   - Get blockchain transaction hash
+   - Generate IPFS gateway URLs
+6. **Comment** (~2 seconds):
+   - Post links to IPFS gateways
+   - Include blockchain verification
+   - Provide download URLs
 
 ## Quick Start
 
 ### For Repository Owners
 
 1. **Fork this repository**
-```bash
-gh repo fork timfong888/filecoin-pin
-```
+   ```bash
+   gh repo fork timfong888/filecoin-pin
+   ```
 
-2. **Set up GitHub secrets** (in your repo settings)
-```bash
-FILECOIN_PRIVATE_KEY=0x...  # Your Filecoin wallet private key
-FILECOIN_RPC_URL=https://api.calibration.node.glif.io/rpc/v1
-```
+2. **Set GitHub secrets**
+   ```bash
+   gh secret set FILECOIN_PRIVATE_KEY --repo your-org/your-repo
+   # Paste your Filecoin wallet private key
+   ```
 
-3. **Ensure you have USDFC tokens**
-- Get testnet USDFC from [faucet](https://stg.usdfc.net)
-- Need ~50-100 USDFC for deposits
+3. **Fund your wallet**
+   - Get tFIL: https://faucet.calibnet.chainsafe-fil.io/funds.html
+   - Get USDFC: https://stg.usdfc.net
+   - Setup payments: `filecoin-pin payments setup --auto --deposit 50`
 
-4. **Comment "FIP approved" on any issue**
-- The action runs automatically
-- Archive is uploaded to Filecoin
-- Bot comments back with verification links
+4. **Test it**
+   ```bash
+   gh issue comment 1 --body "FIP approved" --repo your-org/your-repo
+   ```
 
-### For Users Verifying Archives
+### For Developers
 
-View archived FIPs using the returned information:
-
-```bash
-# Using the Piece CID
-curl https://calib.ezpdpz.net/piece/bafkzcib...
-
-# Verify on blockchain explorer
-open https://calibration.filfox.info/tx/0x...
-```
-
-## Manual Usage
-
-You can also run the archival script manually:
+Clone and customize:
 
 ```bash
-# Archive a specific issue
-node scripts/archive-fip.js --issue 123
+git clone https://github.com/timfong888/filecoin-pin.git
+cd filecoin-pin
 
-# Archive with custom output
-node scripts/archive-fip.js --issue 123 --output fip-123-archive/
+# Review the archival script
+cat scripts/archive-fip.js
 
-# Dry run (don't upload)
-node scripts/archive-fip.js --issue 123 --dry-run
+# Review the GitHub Action
+cat .github/workflows/archive-fip.yml
+
+# Test locally (dry run)
+export GITHUB_TOKEN="ghp_..."
+node scripts/archive-fip.js --issue 1 --repo filecoin-project/FIPs --dry-run
+
+# View the archive
+open fip-1-archive/index.html
 ```
 
 ## Archive Structure
 
-Each FIP archive contains:
-
 ```
 fip-{number}-archive/
-├── index.html              # Main document with navigation
-├── issue.md                # Original issue body
-├── comments.md             # All comments with timestamps
-├── pull-requests/          # Linked PRs with code changes
-│   ├── pr-{number}.md
-│   └── diff-{number}.patch
-├── metadata.json           # FIP metadata
-└── verification.json       # Filecoin storage proof
+├── index.html              # Main page with navigation
+├── issue.md                # Original issue in markdown
+├── comments.md             # All comments chronologically
+├── pull-requests/
+│   ├── pr-123.html        # PR page with navigation
+│   ├── pr-123.md          # PR in markdown
+│   ├── diff-123.patch     # Complete code diff
+│   ├── pr-456.html
+│   └── diff-456.patch
+├── metadata.json           # Archive metadata
+└── verification.json       # Filecoin proof
 ```
 
-All internal links are preserved and clickable within the archive.
+### HTML Navigation Example
+
+From `index.html`, users can:
+- Click "Pull Requests" → `pull-requests/pr-123.html`
+- Click "View diff" → `pull-requests/diff-123.patch`
+- Click "← Back to FIP" → `index.html`
+
+**All relative links** work via IPFS gateways!
 
 ## GitHub Action Workflow
 
-The action runs on issue comments containing "FIP approved":
+The action runs on `issue_comment` events:
 
 ```yaml
 name: Archive FIP to Filecoin
+
 on:
   issue_comment:
     types: [created]
@@ -120,91 +199,157 @@ jobs:
     if: contains(github.event.comment.body, 'FIP approved')
     runs-on: ubuntu-22.04
     steps:
+      - name: Setup Node.js 22
+      - name: Install filecoin-pin CLI
       - name: Extract FIP data
-      - name: Create archive
       - name: Upload to Filecoin
-      - name: Comment verification links
+      - name: Comment with verification
 ```
 
-## Requirements
-
-- **Node.js 22+** - Required for filecoin-pin
-- **GitHub CLI** - For API access
-- **USDFC tokens** - For Filecoin storage payments
-- **Filecoin wallet** - With private key
+See full workflow: [`.github/workflows/archive-fip.yml`](.github/workflows/archive-fip.yml)
 
 ## Configuration
 
-### Environment Variables
+### Required Secrets
+
+| Secret | Description | Example |
+|--------|-------------|---------|
+| `FILECOIN_PRIVATE_KEY` | Wallet private key (testnet) | `0x1234...` |
+
+### Optional Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `FILECOIN_RPC_URL` | Filecoin RPC endpoint | `https://api.calibration.node.glif.io/rpc/v1` |
+| `GITHUB_TOKEN` | GitHub API access | Auto-provided by Actions |
+
+## Manual Usage
+
+### Archive Any Issue
 
 ```bash
-PRIVATE_KEY=0x...              # Required: Filecoin wallet private key
-RPC_URL=https://...            # Optional: Filecoin RPC endpoint
-GITHUB_TOKEN=${{ secrets }}    # Provided by GitHub Actions
+# Set environment
+export PRIVATE_KEY="0x..."
+export RPC_URL="https://api.calibration.node.glif.io/rpc/v1"
+export GITHUB_TOKEN="ghp_..."
+
+# Archive an issue
+node scripts/archive-fip.js --issue 123 --repo filecoin-project/FIPs
+
+# Dry run (no upload)
+node scripts/archive-fip.js --issue 123 --repo filecoin-project/FIPs --dry-run
+
+# Custom output directory
+node scripts/archive-fip.js --issue 123 --output ./my-archive/
 ```
 
-### Storage Costs
+### Verify Archive on Filecoin
 
-Approximate costs on Calibration testnet:
-- Small FIP (<1MB): ~5 USDFC
-- Medium FIP (1-10MB): ~10 USDFC
-- Large FIP (>10MB): ~20 USDFC
+```bash
+# From verification.json
+PIECE_CID=$(jq -r '.pieceCid' fip-123-archive/verification.json)
+ROOT_CID=$(jq -r '.rootCid' fip-123-archive/verification.json)
+TX_HASH=$(jq -r '.transactionHash' fip-123-archive/verification.json)
 
-## Security
+# View on blockchain explorer
+open "https://calibration.filfox.info/tx/$TX_HASH"
 
-**⚠️ Important Security Notes:**
+# View via IPFS gateway
+open "https://ipfs.io/ipfs/$ROOT_CID/index.html"
 
-- Never commit private keys to the repository
-- Use GitHub Secrets for all sensitive data
-- This is testnet only - not for production
-- Private keys in GitHub Actions are ephemeral
+# Download and verify
+curl -o archive.car "https://calib.ezpdpz.net/piece/$PIECE_CID"
+npm install -g ipfs-car
+ipfs-car ls archive.car
+```
+
+## Cost Estimates
+
+On Calibration testnet:
+
+| Archive Size | USDFC Cost | Storage Time |
+|--------------|------------|--------------|
+| < 1 MB | ~5 USDFC | Indefinite |
+| 1-5 MB | ~10 USDFC | Indefinite |
+| 5-10 MB | ~20 USDFC | Indefinite |
+
+**Note**: These are testnet estimates. Mainnet pricing may vary.
 
 ## Examples
 
-### Archived FIP Example
+### Example Bot Comment
 
-See [example-archive/](example-archive/) for a sample archived FIP showing:
-- Complete issue and discussion
-- Linked pull requests
-- Code changes
-- Filecoin verification data
+After successful archival:
 
-### Verification Example
+```markdown
+## ✅ FIP Archive Complete
 
-```bash
-# Check the transaction on-chain
-cast receipt 0x... --rpc-url $RPC_URL
+### 📦 Archive Details
+- **Issue:** #123
+- **Archived:** 2025-10-11T16:00:00Z
 
-# Verify the data set
-filecoin-pin data-set 325
+### 🔗 Filecoin Verification
+| Field | Value |
+|-------|-------|
+| **Piece CID** | `bafkzcib...` |
+| **Root CID** | `bafy...` |
+| **Transaction** | [View on Explorer](https://calibration.filfox.info/tx/0x...) |
 
-# Download and verify the archive
-curl -o archive.car https://calib.ezpdpz.net/piece/bafkzcib...
-ipfs-car ls archive.car
+### 📥 Access Archive
+- 🌐 **IPFS Gateway:** [View on ipfs.io](https://ipfs.io/ipfs/bafy.../index.html)
+- 🌐 **Alternative Gateway:** [View on dweb.link](https://dweb.link/ipfs/bafy.../index.html)
+
+> **Note:** All links within the archive work when viewed via IPFS gateways!
 ```
+
+### Example Archive Contents
+
+Visit a live archive via IPFS gateway and:
+1. Read the original FIP issue
+2. Click through to linked pull requests
+3. View code changes inline
+4. Read all discussion comments
+5. Navigate back to the main page
+
+**Everything works offline** once the CAR file is downloaded!
+
+## Architecture
+
+Built on:
+
+- **[filecoin-pin](https://github.com/filecoin-project/filecoin-pin)** - CLI for Filecoin uploads
+- **[Synapse SDK](https://github.com/filecoin-project/synapse-sdk)** - Payment rails and storage management
+- **[PDP Protocol](https://github.com/filecoin-project/pdp)** - Proof of Data Possession
+- **GitHub Actions** - Automation platform
+- **GitHub CLI (gh)** - API access for data extraction
 
 ## Troubleshooting
 
 ### "No USDFC tokens found"
-```bash
-# Check balance
-filecoin-pin payments status
 
-# Get testnet USDFC
-open https://stg.usdfc.net
+```bash
+filecoin-pin payments status
+# Get USDFC from: https://stg.usdfc.net
 ```
 
 ### "Payment setup required"
+
 ```bash
-# Run initial setup
 filecoin-pin payments setup --auto --deposit 50
 ```
 
 ### "GitHub API rate limit"
+
 ```bash
-# Use authenticated requests (automatically handled in Actions)
+# Use authenticated gh CLI
 gh auth login
 ```
+
+### "Action didn't trigger"
+
+- Check comment contains exact text: "FIP approved"
+- Verify secrets are set correctly
+- Check action permissions in repository settings
 
 ## Development
 
@@ -215,53 +360,88 @@ npm install
 npm test
 ```
 
-### Testing the Archive Script
+### Local Testing
 
 ```bash
-# Test with dry-run
-node scripts/archive-fip.js --issue 1 --dry-run
+# Install dependencies
+npm install -g filecoin-pin
 
-# Test actual upload (requires USDFC)
-node scripts/archive-fip.js --issue 1
+# Set environment
+export PRIVATE_KEY="0x..."
+export RPC_URL="https://api.calibration.node.glif.io/rpc/v1"
+export GITHUB_TOKEN="ghp_..."
+
+# Test archive creation (no upload)
+node scripts/archive-fip.js --issue 1 --repo filecoin-project/FIPs --dry-run
+
+# View the result
+open fip-1-archive/index.html
 ```
 
-### Local Testing of GitHub Action
+### Customization
 
-```bash
-# Install act (GitHub Actions local runner)
-brew install act
+Edit `scripts/archive-fip.js` to:
+- Change HTML styling
+- Add custom metadata fields
+- Modify extraction logic
+- Customize output format
 
-# Run the workflow locally
-act issue_comment -e test-event.json
-```
+## Documentation
 
-## Architecture
+- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute setup guide
+- **[TESTING.md](TESTING.md)** - Comprehensive testing guide
+- **[README-ORIGINAL.md](README-ORIGINAL.md)** - Original filecoin-pin documentation
+- **[Demo Walkthrough](../demo-walkthrough/DEMO_WALKTHROUGH.md)** - filecoin-pin CLI usage
 
-Built on:
-- **[filecoin-pin](https://github.com/filecoin-project/filecoin-pin)** - CLI for uploading to Filecoin
-- **[Synapse SDK](https://github.com/filecoin-project/synapse-sdk)** - Filecoin payment rails
-- **[PDP Protocol](https://github.com/filecoin-project/pdp)** - Proof of Data Possession
-- **GitHub Actions** - Automation platform
+## Status
+
+**⚠️ Alpha Software** - Currently running on Filecoin Calibration testnet only. Not for production use.
+
+**Live Production System**: https://github.com/timfong888/FIPs
+
+## Contributing
+
+Contributions welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## Roadmap
 
-- [ ] Support for FIP-specific metadata extraction
-- [ ] IPFS gateway links for retrieval
 - [ ] Mainnet support
 - [ ] Archive search/indexing
-- [ ] Multi-repo FIP tracking
-
-## References
-
-- [Filecoin Pin Demo Walkthrough](../demo-walkthrough/DEMO_WALKTHROUGH.md)
-- [IPFS Pinning Service API](https://ipfs.github.io/pinning-services-api-spec/)
-- [Synapse SDK Documentation](https://github.com/filecoin-project/synapse-sdk)
-- [FIP Process](https://github.com/filecoin-project/FIPs)
+- [ ] Multi-repo deployment
+- [ ] Archive versioning
+- [ ] Metadata enrichment
+- [ ] API for programmatic access
 
 ## License
 
 Dual-licensed under MIT + Apache 2.0 (same as upstream filecoin-pin)
 
-## Original Project
+## References
 
-This is a fork of [filecoin-project/filecoin-pin](https://github.com/filecoin-project/filecoin-pin) with added FIP archival automation. See [README-ORIGINAL.md](README-ORIGINAL.md) for the original documentation.
+- [Filecoin Pin Demo](../demo-walkthrough/DEMO_WALKTHROUGH.md)
+- [IPFS Pinning Service API](https://ipfs.github.io/pinning-services-api-spec/)
+- [Synapse SDK](https://github.com/filecoin-project/synapse-sdk)
+- [PDP Protocol](https://github.com/filecoin-project/pdp)
+- [Filecoin Documentation](https://docs.filecoin.io)
+
+## Related Projects
+
+- **[filecoin-project/filecoin-pin](https://github.com/filecoin-project/filecoin-pin)** - Upstream project
+- **[filecoin-project/FIPs](https://github.com/filecoin-project/FIPs)** - Official FIPs repository
+- **[timfong888/FIPs](https://github.com/timfong888/FIPs)** - This system deployed
+
+## Support
+
+For issues and questions:
+- **Issues**: https://github.com/timfong888/filecoin-pin/issues
+- **Discussions**: https://github.com/timfong888/filecoin-pin/discussions
+
+---
+
+**Built with** ❤️ **using Filecoin, IPFS, and the power of decentralized storage**
