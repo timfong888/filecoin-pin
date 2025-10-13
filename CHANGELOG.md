@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.8.0](https://github.com/timfong888/filecoin-pin/compare/v0.7.3...v0.8.0) (2025-10-13)
+
+
+### Features
+
+* add FIP archival system ([97feba6](https://github.com/timfong888/filecoin-pin/commit/97feba63264cefcc4fbe35203ff4bdf14b160a8e))
+* add IPFS gateway compatibility for archived FIPs ([2108dd3](https://github.com/timfong888/filecoin-pin/commit/2108dd3cad07c689a90452d2356164ddc8936853))
+* add IPFS gateway links to GitHub Action comments ([d72508a](https://github.com/timfong888/filecoin-pin/commit/d72508a7839b5f5f0e57434835e9a9faa6e605ab))
+* create re-usable github action ([#60](https://github.com/timfong888/filecoin-pin/issues/60)) ([aa6b9bf](https://github.com/timfong888/filecoin-pin/commit/aa6b9bfc957bc59621606c1bad7e1a676b7fddaf))
+
+
+### Chores
+
+* **dev:** fix biome version ([#77](https://github.com/timfong888/filecoin-pin/issues/77)) ([dbf14be](https://github.com/timfong888/filecoin-pin/commit/dbf14be0ec0b52b88dd8282cf03b180ca67a370b))
+
+
+### Documentation
+
+* add comprehensive README for FIP archival system ([0a627ca](https://github.com/timfong888/filecoin-pin/commit/0a627caf72c7f98cd9510691a39832ee165de3e4))
+* add quick start guide ([ef6e554](https://github.com/timfong888/filecoin-pin/commit/ef6e55478820ec23062295cbff2549b9fe3756e9))
+* update support section with enabled discussions link ([52cd501](https://github.com/timfong888/filecoin-pin/commit/52cd50119bee524b4267fcc6f0fc5c95c1bf4f3f))
+
 ## [0.7.3](https://github.com/filecoin-project/filecoin-pin/compare/v0.7.2...v0.7.3) (2025-10-09)
 
 
